@@ -1,5 +1,6 @@
 import sys
 
+
 try:
     import openpyxl as opx
 except ImportError as iE:
@@ -7,16 +8,18 @@ except ImportError as iE:
     sys.exit(1)
 
 
-list_of_dicts = []
-
-
-def get_name_mail():
-    """creates a dictionary of name, email, password and appends to
-    list_of_dicts"""
-    file_name = 'ENTER/FILE/PATH/example_email_list.xlsx' # input local file path
+def load_workbook(file):
+    '''Returns the active excel worksheet'''
+    file_name = file
     sheet_name = 'Sheet1'
-    wb = opx.load_workbook(file_name)
-    ws = wb[sheet_name]
+    wb = opx.load_workbook(file_name)  # loads excel workbook
+    ws = wb[sheet_name]  # reads active worksheet into memory
+    return wb, ws
+
+
+def get_data_from_sheet(wb, ws):
+    '''Returns a dictionary of column values'''
+    column_values = []
     for _ in range(2, 40): # sets range of rows to fetch data from spreadsheet
         info_dict = { # creates a dictionary of name, password, email for each row in spreadsheet
             'name': None,
@@ -26,18 +29,18 @@ def get_name_mail():
         info_dict['name'] = ws.cell(row=_, column=1).value # maps 'name' data to correct column in spreadsheet
         info_dict['password'] = ws.cell(row=_, column=3).value # maps 'password' data to correct column in spreadsheet
         info_dict['email'] = ws.cell(row=_, column=2).value # maps 'email' data to correct column in spreadsheet
-        list_of_dicts.append(info_dict)
+        column_values.append(info_dict)
     wb.close()
-    return(list_of_dicts)
+    return column_values
 
 
-def write_emails(list_of_dicts):
-    """Reads email.txt and replaces placeholders with values in
-    list_of_dicts"""
+def write_emails(col_vals):
+    '''Reads email.txt and replaces placeholders with values in
+    list_of_dicts'''
     email_file = open('email.txt', 'r')
     message_content = email_file.read()
     new_file = open('output.txt', 'w')
-    for person in list_of_dicts:
+    for person in col_vals:
         formatted_message = message_content.format(
             person['name'],
             person['email'],
@@ -47,6 +50,12 @@ def write_emails(list_of_dicts):
     new_file.close()
 
 
+def main():
+    file = 'example_email_list.xlsx'
+    workbook, worksheet = load_workbook(file)
+    data = get_data_from_sheet(workbook, worksheet)
+    write_emails(data)
+
+
 if __name__ == '__main__':
-    get_name_mail()
-    write_emails(list_of_dicts)
+    main()
